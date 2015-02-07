@@ -168,6 +168,7 @@ NetworkCommand.UPDATED = "network_command_updated_event"
 
 NetworkCommand.STATE_UPDATED = "state_updated"
 NetworkCommand.PRIORITY_UPDATED = "priority_updated"
+NetworkCommand.TIMEOUT = "network_command_timeout"
 
 
 
@@ -184,6 +185,9 @@ function NetworkCommand:_init( params )
 	self._type = params.type
 	self._state = self.STATE_PENDING
 	self._priority = params.priority or self.LOW
+
+	self._timeout = params.timeout ~= nil and params.timeout or 0
+	self._timeout_timer = nil
 
 	self._command = params.command
 	-- url
@@ -274,6 +278,8 @@ function NetworkCommand:execute( net_object )
 	-- Setup basic Corona network.* callback
 
 	local callback = function( event )
+		-- capture original return or timeout
+		if self.state ~= self.STATE_UNFULFILLED then return end
 
 		-- set Command Object next state
 		if event.isError then
@@ -282,10 +288,14 @@ function NetworkCommand:execute( net_object )
 			self.state = self.STATE_RESOLVED
 		end
 
+		self:_stopTimer()
 		-- do upstream callback
 		if p.listener then p.listener( event ) end
 
 	end
+
+	self:_startTimer( callback )
+
 
 	-- Set Command Object active state and
 	-- call appropriate Corona network.* function
@@ -293,18 +303,17 @@ function NetworkCommand:execute( net_object )
 	self.state = self.STATE_UNFULFILLED
 
 	if t == self.TYPE_REQUEST then
-		self._net_id = net_object.request( p.url, p.method, callback, p.params )
+		self._net_id = network.request( p.url, p.method, callback, p.params )
 
 	elseif t == self.TYPE_DOWNLOAD then
-		self._net_id = net_object.download( p.url, p.method, callback, p.params, p.filename, p.basedir )
+		self._net_id = network.download( p.url, p.method, callback, p.params, p.filename, p.basedir )
 
 	elseif t == self.TYPE_UPLOAD then
-		self._net_id = net_object.upload( p.url, p.method, callback, p.params, p.filename, p.basedir, p.contenttype )
+		self._net_id = network.upload( p.url, p.method, callback, p.params, p.filename, p.basedir, p.contenttype )
 
 	end
 
 end
-
 
 
 -- cancel
@@ -316,19 +325,46 @@ function NetworkCommand:cancel()
 		network.cancel( self._net_id )
 		self._net_id = nil
 	end
-
+	self:_stopTimer()
 	self.state = self.STATE_CANCELLED
 end
 
 
+
+--====================================================================--
 --== Private Methods
 
--- none
 
+function NetworkCommand:_startTimer( callback )
+	-- print( "NetworkCommand:_startTimer" )
 
+	if self._timeout == 0 then return end
 
+	self:_stopTimer()
 
---== Event Methods
+	local tof, tot
+
+	tof = function()
+		if LOCAL_DEBUG then
+			print( "NiceNet: Forced command timeout" )
+		end
+		local e = {
+			isError=true
+		}
+		callback(e)
+	end
+
+	tot = timer.performWithDelay( self._timeout, tof )
+	self._timeout_timer = tot
+
+end
+
+function NetworkCommand:_stopTimer()
+	-- print( "NetworkCommand:_stopTimer" )
+	if self._timeout_timer == nil then return end
+	timer.cancel( self._timeout_timer )
+	self._timeout_timer = nil
+end
 
 
 
@@ -475,11 +511,13 @@ function NiceNetwork:request( url, method, listener, params )
 		listener=listener,
 		params=params
 	}
+
 	-- save parameters for NiceNet Command object
 	cmd_params = {
 		command=net_params,
 		type=NetworkCommand.TYPE_REQUEST,
-		priority=self._default_priority
+		priority=self._default_priority,
+		timeout=params.timeout
 	}
 
 	return self:_insertCommand( cmd_params )
