@@ -163,7 +163,7 @@ NetworkCommand.TYPE_REQUEST = 'network_request'
 NetworkCommand.TYPE_UPLOAD = 'network_upload'
 
 -- priority constants
-NetworkCommand.STATE_PENDING = 'state_pending' -- not yet active
+NetworkCommand.STATE_PENDING = 'state_pending' -- ie, not yet active
 NetworkCommand.STATE_UNFULFILLED = 'state_unfulfilled'
 NetworkCommand.STATE_RESOLVED = 'state_resolved'
 NetworkCommand.STATE_REJECTED = 'state_rejected'
@@ -171,12 +171,10 @@ NetworkCommand.STATE_CANCELLED = 'state_cancelled'
 
 --== Event Constants
 
-NetworkCommand.EVENT = "network_command_event"
-NetworkCommand.UPDATED = "network_command_updated_event"
+NetworkCommand.EVENT = 'network-command-event'
 
-NetworkCommand.STATE_UPDATED = "state_updated"
-NetworkCommand.PRIORITY_UPDATED = "priority_updated"
-NetworkCommand.TIMEOUT = "network_command_timeout"
+NetworkCommand.STATE_UPDATED = 'state-updated'
+NetworkCommand.PRIORITY_UPDATED = 'priority-updated'
 
 
 --======================================================--
@@ -383,29 +381,10 @@ end
 
 
 --====================================================================--
---== Event Methods
+--== Event Handlers
 
 
--- _dispatchEvent
--- Convenience method used to dispatch custom events
---
--- @params e_type, string, the type of the event
--- @params data, <any>, will be attached to event as event.data
---
-function NetworkCommand:_dispatchEvent( e_type, data )
-	--print( "NetworkCommand:_dispatchEvent" )
-
-	-- setup custom event
-	local e = {
-		name = NetworkCommand.EVENT,
-		type = e_type,
-
-		target = self,
-		data = data
-	}
-
-	self:dispatchEvent( e )
-end
+-- none
 
 
 
@@ -501,6 +480,7 @@ function NiceNetwork.__getters:network()
 end
 
 
+-- request()
 -- this is a replacement for Corona network.request()
 --[[
 network.request( url, method, listener [, params] )
@@ -508,6 +488,7 @@ network.request( url, method, listener [, params] )
 function NiceNetwork:request( url, method, listener, params )
 	-- print( "NiceNetwork:request ", url, method )
 	params = params or {}
+	--==--
 
 	--== Setup and create Command object
 
@@ -533,6 +514,7 @@ function NiceNetwork:request( url, method, listener, params )
 end
 
 
+-- download()
 -- this is a replacement for Corona network.download()
 --[[
 network.download( url, method, listener [, params], filename [, baseDirectory] )
@@ -548,7 +530,6 @@ function NiceNetwork:download( url, method, listener, params, filename, basedir 
 		filename = params
 		params = nil
 	end
-
 
 	--== Setup and create Command object
 
@@ -738,29 +719,5 @@ end
 
 
 
--- _dispatchEvent
--- Convenience method used to dispatch custom events
---
--- @params e_type, string, the type of the event
--- @params data, <any>, will be attached to event as event.data
---
-function NiceNetwork:_dispatchEvent( e_type, data )
-	--print( "NiceNetwork:_dispatchEvent" )
-
-	-- setup custom event
-	local e = {
-		name = NiceNetwork.EVENT,
-		type = e_type,
-
-		data = data
-	}
-
-	self:dispatchEvent( e )
-end
-
-
-
 
 return NiceNetwork
-
-
