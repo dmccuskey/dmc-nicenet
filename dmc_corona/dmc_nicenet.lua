@@ -118,6 +118,7 @@ dmc_lib_data.dmc_nicenet = dmc_lib_data.dmc_nicenet or {}
 
 local DMC_NICENET_DEFAULTS = {
 	debug_active=false,
+	make_global=false
 }
 
 local dmc_nicenet_data = Utils.extend( dmc_lib_data.dmc_nicenet, DMC_NICENET_DEFAULTS )
