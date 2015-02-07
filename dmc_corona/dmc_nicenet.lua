@@ -514,7 +514,7 @@ function NiceNetwork:request( url, method, listener, params )
 		timeout=params.timeout
 	}
 
-	return self:_insertCommand( cmd_params )
+	return self:_insertCommandIntoQueue( cmd_params )
 end
 
 
@@ -555,7 +555,7 @@ function NiceNetwork:download( url, method, listener, params, filename, basedir 
 		priority=self._default_priority
 	}
 
-	return self:_insertCommand( cmd_params )
+	return self:_insertCommandIntoQueue( cmd_params )
 end
 
 
@@ -603,7 +603,7 @@ function NiceNetwork:upload( url, method, listener, params, filename, basedir, c
 		priority=self._default_priority
 	}
 
-	return self:_insertCommand( cmd_params )
+	return self:_insertCommandIntoQueue( cmd_params )
 end
 
 
@@ -612,8 +612,8 @@ end
 --== Private Methods
 
 
-function NiceNetwork:_insertCommand( params )
-	--print( "NiceNetwork:_insertCommand ", command.type )
+function NiceNetwork:_insertCommandIntoQueue( params )
+	--print( "NiceNetwork:_insertCommandIntoQueue ", params.type )
 
 	local net_command = NetworkCommand:new( params )
 	net_command:addEventListener( net_command.EVENT, self._netCmd_f )
@@ -684,16 +684,32 @@ function NiceNetwork:_checkStatus( queue )
 end
 
 
+-- _broadcastStatus()
+-- count status, and send event
+--
 function NiceNetwork:_broadcastStatus()
 	--print( "NiceNetwork:_broadcastStatus" )
-
 	local data = {
 		active = self:_checkStatus( self._active_queue ),
 		pending = self:_checkStatus( self._pending_queue )
 	}
-
-	self:_dispatchEvent( self.QUEUE_UPDATE, data )
+	self:dispatchEvent( self.QUEUE_UPDATE, data )
 end
+
+
+-- _checkValidCommandState()
+-- check current state, remove if necessary
+--
+function NiceNetwork:_checkValidCommandState( net_command )
+	--print( "NiceNetwork:_checkValidCommandState" )
+	local state = net_command.state
+
+	if state == cmd.STATE_REJECTED or state == cmd.STATE_RESOLVED or state == cmd.STATE_CANCELLED then
+		-- remove from Active queue
+		self:_removeCommandFromQueue( cmd )
+	end
+end
+
 
 
 
@@ -708,15 +724,11 @@ function NiceNetwork:_networkCommandEvent_handler( event )
 	--print( "NiceNetwork:_networkCommandEvent_handler ", event.type )
 
 	if event.type == cmd.PRIORITY_UPDATED then
-		-- count status, and send event
 		self:_broadcastStatus()
 
 	elseif event.type == cmd.STATE_UPDATED then
+		self:_checkValidCommandState( event.target )
 
-		if cmd.state == cmd.STATE_REJECTED or cmd.state == cmd.STATE_RESOLVED or cmd.state == cmd.STATE_CANCELLED then
-			-- remove from Active queue
-			self:_removeCommand( cmd )
-		end
 	end
 end
 
