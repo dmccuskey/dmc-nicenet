@@ -256,11 +256,9 @@ function NetworkCommand.__getters:priority()
 end
 function NetworkCommand.__setters:priority( value )
 	--print( "NetworkCommand.__setters:priority ", value )
-	local tmp = self._priority
+	if self._priority == value then return end
 	self._priority = value
-	if tmp ~= value then
-		self:_dispatchEvent( NetworkCommand.PRIORITY_UPDATED )
-	end
+	self:dispatchEvent( NetworkCommand.PRIORITY_UPDATED )
 end
 
 
@@ -271,11 +269,9 @@ function NetworkCommand.__getters:state()
 end
 function NetworkCommand.__setters:state( value )
 	--print( "NetworkCommand.__setters:state ", value )
-	local tmp = self._state
+	if self._state == value then return end
 	self._state = value
-	if tmp ~= value then
-		self:_dispatchEvent( NetworkCommand.STATE_UPDATED )
-	end
+	self:dispatchEvent( NetworkCommand.STATE_UPDATED )
 end
 
 
@@ -345,10 +341,10 @@ end
 --
 function NetworkCommand:cancel()
 	--print( "NetworkCommand:cancel" )
-	if self._net_id ~= nil then
-		network.cancel( self._net_id )
-		self._net_id = nil
-	end
+	if self.state == self.STATE_CANCELLED then return end
+
+	self._network.cancel( self._net_id )
+	self._net_id = nil
 	self:_stopTimer()
 	self.state = self.STATE_CANCELLED
 end
