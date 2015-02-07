@@ -565,7 +565,8 @@ function NiceNetwork:download( url, method, listener, params, filename, basedir 
 	cmd_params = {
 		command=net_params,
 		type=NetworkCommand.TYPE_DOWNLOAD,
-		priority=self._default_priority
+		priority=self._default_priority,
+		timeout=params.timeout
 	}
 
 	return self:_insertCommandIntoQueue( cmd_params )
@@ -594,7 +595,6 @@ function NiceNetwork:upload( url, method, listener, params, filename, basedir, c
 		basedir = nil
 	end
 
-
 	--== Setup and create Command object
 
 	local net_params, cmd_params
@@ -613,7 +613,8 @@ function NiceNetwork:upload( url, method, listener, params, filename, basedir, c
 	cmd_params = {
 		command=net_params,
 		type=NetworkCommand.TYPE_DOWNLOAD,
-		priority=self._default_priority
+		priority=self._default_priority,
+		timeout=params.timeout
 	}
 
 	return self:_insertCommandIntoQueue( cmd_params )
