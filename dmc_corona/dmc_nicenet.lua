@@ -1,8 +1,8 @@
 --====================================================================--
--- dmc_nicenet.lua
+-- dmc_corona/dmc_nicenet.lua
 --
+-- A better behaved network object for the Corona SDK
 --
--- by David McCuskey
 -- Documentation:
 --====================================================================--
 
@@ -33,15 +33,27 @@ SOFTWARE.
 --]]
 
 
+
+--====================================================================--
+--== DMC Corona Library : DMC NiceNet
+--====================================================================--
+
+
 -- Semantic Versioning Specification: http://semver.org/
 
-local VERSION = "1.0.0"
+local VERSION = "0.11.2"
 
 
 
 --====================================================================--
--- Boot Support Methods
+--== DMC Corona Library Config
 --====================================================================--
+
+
+
+--====================================================================--
+--== Support Functions
+
 
 local Utils = {} -- make copying from dmc_utils easier
 
@@ -113,36 +125,32 @@ local dmc_nicenet_data = Utils.extend( dmc_lib_data.dmc_nicenet, DMC_NICENET_DEF
 
 
 --====================================================================--
--- Imports
+--== Imports
+
+
+local Objects = require 'dmc_objects'
+local Utils = require 'dmc_utils'
+
+
+
 --====================================================================--
+--== Setup, Constants
 
-local Objects = require( dmc_lib_func.find( 'dmc_objects' ) )
-local Utils = require( dmc_lib_func.find('dmc_utils') )
-
-
-
---====================================================================--
--- Setup, Constants
---====================================================================--
 
 -- setup some aliases to make code cleaner
-local inheritsFrom = Objects.inheritsFrom
-local CoronaBase = Objects.CoronaBase
-
-
---====================================================================--
--- Support Methods
---====================================================================--
+local newClass = Objects.newClass
+local ObjectBase = Objects.ObjectBase
 
 
 
 --====================================================================--
--- Network Command Class
+--== Network Command Class
 --====================================================================--
 
-local NetworkCommand = inheritsFrom( CoronaBase )
-NetworkCommand.NAME = "Network Command"
 
+local NetworkCommand = newClass( ObjectBase, {name="Network Command"} )
+
+--== Class Constants
 
 -- priority constants
 NetworkCommand.HIGH = 1
@@ -161,8 +169,8 @@ NetworkCommand.STATE_RESOLVED = 'state_resolved'
 NetworkCommand.STATE_REJECTED = 'state_rejected'
 NetworkCommand.STATE_CANCELLED = 'state_cancelled'
 
-
 --== Event Constants
+
 NetworkCommand.EVENT = "network_command_event"
 NetworkCommand.UPDATED = "network_command_updated_event"
 
@@ -171,13 +179,14 @@ NetworkCommand.PRIORITY_UPDATED = "priority_updated"
 NetworkCommand.TIMEOUT = "network_command_timeout"
 
 
+--======================================================--
+-- Start: Setup DMC Objects
 
-function NetworkCommand:_init( params )
-	--print( "NetworkCommand:_init ", params )
-	self:superCall( "_init" )
-	--==--
-
+function NetworkCommand:__init__( params )
+	--print( "NetworkCommand:__init__ ", params )
 	params = params or {}
+	self:superCall( '__init__', params )
+	--==--
 
 	--== Create Properties ==--
 
@@ -197,18 +206,15 @@ function NetworkCommand:_init( params )
 
 	self._net_id = nil -- id from network.* call, can use to cancel
 
-	--== Display Groups ==--
-
-	--== Object References ==--
-
 end
 
 
--- _initComplete()
+--[[
+-- __initComplete__()
 --
-function NetworkCommand:_initComplete()
-	--print( "NetworkCommand:_initComplete" )
-	self:superCall( "_initComplete" )
+function NetworkCommand:__initComplete__()
+	--print( "NetworkCommand:__initComplete__" )
+	self:superCall( '__initComplete__' )
 	--==--
 end
 
@@ -217,10 +223,15 @@ function NetworkCommand:_undoInitComplete()
 	--==--
 	self:superCall( "_undoInitComplete" )
 end
+--]]
+
+-- END: Setup DMC Objects
+--======================================================--
 
 
 
---== END: Setup DMC Objects
+--====================================================================--
+--== Public Methods
 
 
 function NetworkCommand.__getters:key()
@@ -237,6 +248,7 @@ function NetworkCommand.__getters:type()
 	return self._type
 end
 
+
 -- getter/setter, command priority
 --
 function NetworkCommand.__getters:priority()
@@ -252,6 +264,7 @@ function NetworkCommand.__setters:priority( value )
 	end
 end
 
+
 -- getter/setter, command state
 function NetworkCommand.__getters:state()
 	--print( "NetworkCommand.__getters:state" )
@@ -265,6 +278,7 @@ function NetworkCommand.__setters:state( value )
 		self:_dispatchEvent( NetworkCommand.STATE_UPDATED )
 	end
 end
+
 
 -- execute
 -- start the network call
@@ -368,6 +382,10 @@ end
 
 
 
+--====================================================================--
+--== Event Methods
+
+
 -- _dispatchEvent
 -- Convenience method used to dispatch custom events
 --
@@ -392,40 +410,38 @@ end
 
 
 
-
 --====================================================================--
--- Nice Network Base Class
+--== Nice Network Base Class
 --====================================================================--
 
-local NiceNetwork = inheritsFrom( CoronaBase )
-NiceNetwork.NAME = "Nice Network Base"
 
+local NiceNetwork = newClass( ObjectBase, {name="Nice Network"} )
+
+--== Class Constants
 
 -- priority constants
 NiceNetwork.HIGH = NetworkCommand.HIGH
 NiceNetwork.MEDIUM = NetworkCommand.MEDIUM
 NiceNetwork.LOW = NetworkCommand.LOW
 
-
 NiceNetwork.DEFAULT_ACTIVE_QUEUE_LIMIT = 2
 NiceNetwork.MIN_ACTIVE_QUEUE_LIMIT = 1
 
-
 --== Event Constants
-NiceNetwork.EVENT = "nicenet_event"
-NiceNetwork.QUEUE_UPDATE = "nicenet_queue_updated_event"
+
+NiceNetwork.EVENT = 'nicenet-event'
+
+NiceNetwork.QUEUE_UPDATE = 'queue-updated-event'
 
 
+--======================================================--
+-- Start: Setup DMC Objects
 
---== Start: Setup DMC Objects
-
-
-function NiceNetwork:_init( params )
-	--print( "NiceNetwork:_init" )
-	self:superCall( "_init" )
-	--==--
-
+function NiceNetwork:__init__( params )
+	--print( "NiceNetwork:__init__" )
 	params = params or {}
+	self:superCall( '__init__', params )
+	--==--
 
 	--== Create Properties ==--
 
@@ -437,48 +453,40 @@ function NiceNetwork:_init( params )
 
  	-- dict of Active Command Objects, keyed on object raw id
  	self._active_queue = nil
+
  	-- dict of Pending Command Objects, keyed on object raw id
  	self._pending_queue = nil
 
  	self._network = params.network or _G.network
-
-	--== Display Groups ==--
-
-	--== Object References ==--
-
 end
 
 
--- _initComplete()
+-- __initComplete__()
 --
-function NiceNetwork:_initComplete()
-	--print( "NiceNetwork:_initComplete" )
-	self:superCall( "_initComplete" )
+function NiceNetwork:__initComplete__()
+	--print( "NiceNetwork:__initComplete__" )
+	self:superCall( '__initComplete__' )
 	--==--
-
 	-- create data structure
 	self._active_queue = {}
 	self._pending_queue = {}
-
 end
 
-function NiceNetwork:_undoInitComplete()
-	--print( "NiceNetwork:_undoInitComplete" )
-
+function NiceNetwork:__undoInitComplete__()
+	--print( "NiceNetwork:__undoInitComplete__" )
 	-- remove data structure
 	self._active_queue = nil
 	self._pending_queue = nil
-
 	--==--
-	self:superCall( "_undoInitComplete" )
+	self:superCall( '__undoInitComplete__' )
 end
 
-
---== END: Setup DMC Objects
-
-
+-- END: Setup DMC Objects
+--======================================================--
 
 
+
+--====================================================================--
 --== Public Methods
 
 
@@ -498,7 +506,8 @@ end
 network.request( url, method, listener [, params] )
 --]]
 function NiceNetwork:request( url, method, listener, params )
-	--print( "NiceNetwork:request ", url, method )
+	-- print( "NiceNetwork:request ", url, method )
+	params = params or {}
 
 	--== Setup and create Command object
 
@@ -614,9 +623,8 @@ end
 
 
 
-
+--====================================================================--
 --== Private Methods
-
 
 
 function NiceNetwork:_insertCommand( params )
@@ -704,8 +712,8 @@ end
 
 
 
-
---== Event Methods
+--====================================================================--
+--== Event Handlers
 
 
 -- this is the network command event handler
