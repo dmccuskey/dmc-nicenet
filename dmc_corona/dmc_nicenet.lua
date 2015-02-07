@@ -203,6 +203,7 @@ function NetworkCommand:__init__( params )
 	-- params
 
 	self._net_id = nil -- id from network.* call, can use to cancel
+	self._network = nil -- network object to use, set on execute()
 
 end
 
@@ -278,14 +279,25 @@ function NetworkCommand.__setters:state( value )
 end
 
 
+function NetworkCommand.__setters:network( value )
+	--print( "NetworkCommand.__setters:network ", value )
+	if value == nil then return end
+	self._network = value
+end
+
+
+
 -- execute
 -- start the network call
 --
-function NetworkCommand:execute( net_object )
+function NetworkCommand:execute( _network )
 	--print( "NetworkCommand:execute" )
-
+	assert( _network, "NetworkCommand:execute requires a network object" )
+	--==--
 	local t = self._type
 	local p = self._command
+
+	self.network = _network
 
 	-- Setup basic Corona network.* callback
 
@@ -315,13 +327,13 @@ function NetworkCommand:execute( net_object )
 	self.state = self.STATE_UNFULFILLED
 
 	if t == self.TYPE_REQUEST then
-		self._net_id = network.request( p.url, p.method, callback, p.params )
+		self._net_id = _network.request( p.url, p.method, callback, p.params )
 
 	elseif t == self.TYPE_DOWNLOAD then
-		self._net_id = network.download( p.url, p.method, callback, p.params, p.filename, p.basedir )
+		self._net_id = _network.download( p.url, p.method, callback, p.params, p.filename, p.basedir )
 
 	elseif t == self.TYPE_UPLOAD then
-		self._net_id = network.upload( p.url, p.method, callback, p.params, p.filename, p.basedir, p.contenttype )
+		self._net_id = _network.upload( p.url, p.method, callback, p.params, p.filename, p.basedir, p.contenttype )
 
 	end
 
@@ -436,6 +448,7 @@ function NiceNetwork:__init__( params )
  	-- dict of Pending Command Objects, keyed on object raw id
  	self._pending_queue = nil
 
+ 	-- save network object, param or global
  	self._network = params.network or _G.network
  	self._netCmd_f = nil -- callback for network command objects
 end
