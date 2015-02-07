@@ -437,6 +437,7 @@ function NiceNetwork:__init__( params )
  	self._pending_queue = nil
 
  	self._network = params.network or _G.network
+ 	self._netCmd_f = nil -- callback for network command objects
 end
 
 
@@ -449,10 +450,13 @@ function NiceNetwork:__initComplete__()
 	-- create data structure
 	self._active_queue = {}
 	self._pending_queue = {}
+
+	self._netCmd_f = self:createCallback( self._networkCommandEvent_handler )
 end
 
 function NiceNetwork:__undoInitComplete__()
 	--print( "NiceNetwork:__undoInitComplete__" )
+	self._netCmd_f=nil
 	-- remove data structure
 	self._active_queue = nil
 	self._pending_queue = nil
@@ -611,21 +615,21 @@ end
 function NiceNetwork:_insertCommand( params )
 	--print( "NiceNetwork:_insertCommand ", command.type )
 
-	local command = NetworkCommand:new( params )
-	command:addEventListener( command.EVENT, self )
-	self._pending_queue[ command.key ] = command
+	local net_command = NetworkCommand:new( params )
+	net_command:addEventListener( net_command.EVENT, self._netCmd_f )
+	self._pending_queue[ net_command.key ] = net_command
 
 	self:_processQueue()
 
-	return command
+	return net_command
 end
 
-function NiceNetwork:_removeCommand( command )
-	--print( "NiceNetwork:_insertCommand ", command.type )
+function NiceNetwork:_removeCommandFromQueue( net_command )
+	--print( "NiceNetwork:_removeCommandFromQueue ", net_command.type )
 
-	self._active_queue[ command.key ] = nil
-	command:removeEventListener( command.EVENT, self )
-	command:removeSelf()
+	self._active_queue[ net_command.key ] = nil
+	net_command:removeEventListener( net_command.EVENT, self._netCmd_f )
+	net_command:removeSelf()
 
 	self:_processQueue()
 end
@@ -697,12 +701,11 @@ end
 --== Event Handlers
 
 
--- this is the network command event handler
--- using name of the event as method name
+-- _networkCommandEvent_handler()
+-- handle any events from Network Command objects
 --
-function NiceNetwork:network_command_event( event )
-	--print( "NiceNetwork:network_command_event ", event.type )
-	local cmd = event.target
+function NiceNetwork:_networkCommandEvent_handler( event )
+	--print( "NiceNetwork:_networkCommandEvent_handler ", event.type )
 
 	if event.type == cmd.PRIORITY_UPDATED then
 		-- count status, and send event
